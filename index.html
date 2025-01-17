@@ -5,77 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة العقارات</title>
     <style>
+        /* تنسيقات بسيطة للواجهة */
         body {
             font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-            direction: rtl;
         }
+
         header {
-            background-color: #6200ea;
-            color: #fff;
-            padding: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
             text-align: center;
         }
+
         .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 1rem;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            margin: 20px auto;
         }
-        .filter-section {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
+
+        h2 {
+            color: #333;
         }
-        .filter-section select, .filter-section input {
-            padding: 0.5rem;
-            width: 45%;
-        }
-        .property-upload input, .property-upload textarea {
-            margin: 1rem 0;
-            padding: 0.5rem;
+
+        .property-upload input,
+        .property-upload select,
+        .property-upload textarea,
+        .filter-section input,
+        .filter-section select {
             width: 100%;
-        }
-        .property-upload button, .property-item button {
-            background-color: #6200ea;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
             border-radius: 4px;
         }
-        .property-item {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background-color: #f9f9f9;
+
+        .property-upload button,
+        .filter-section button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
+
+        .property-upload button:hover,
+        .filter-section button:hover {
+            background-color: #45a049;
+        }
+
+        .property-item {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
         .property-item img {
             max-width: 100%;
             border-radius: 4px;
         }
-        .property-item .attachments {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .property-item .attachments img {
-            max-width: 150px;
-            margin: 10px;
-            border-radius: 4px;
-        }
-        .property-item .attachments button {
+
+        .attachments {
             margin-top: 10px;
         }
+
+        .attachment-item {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .attachment-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
         .edit-attachment-section {
-            display: flex;
-            flex-direction: column;
             margin-top: 20px;
+        }
+
+        .edit-attachment-section img {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .edit-attachment-section input[type="file"] {
+            width: 50%;
         }
     </style>
 </head>
@@ -118,11 +141,14 @@
     
     <script>
         const propertyList = document.getElementById('propertyList');
+        
+        // تحميل العقارات عند التحميل الأول
         document.addEventListener('DOMContentLoaded', () => {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             storedProperties.forEach(property => addPropertyToList(property));
         });
 
+        // إضافة عقار جديد
         function addProperty() {
             const name = document.getElementById('propertyName').value;
             const location = document.getElementById('propertyLocation').value;
@@ -163,6 +189,7 @@
             });
         }
 
+        // إضافة العقار إلى القائمة
         function addPropertyToList(property) {
             const propertyItem = document.createElement('div');
             propertyItem.className = 'property-item';
@@ -175,6 +202,7 @@
                         <div class="attachment-item">
                             <img src="${img}" alt="مرفق ${index + 1}">
                             <button onclick="editAttachment('${property.name}', ${index})">تعديل</button>
+                            <button onclick="deleteAttachment('${property.name}', ${index})">حذف</button>
                         </div>
                     `).join('')}
                 </div>
@@ -197,6 +225,7 @@
             propertyList.appendChild(propertyItem);
         }
 
+        // تعديل المرفق
         function editAttachment(propertyName, attachmentIndex) {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             const property = storedProperties.find(p => p.name === propertyName);
@@ -222,6 +251,7 @@
             propertyItem.appendChild(editSection);
         }
 
+        // تحديث المرفق
         function updateAttachment(propertyName, attachmentIndex) {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             const property = storedProperties.find(p => p.name === propertyName);
@@ -242,11 +272,14 @@
                 property.images[attachmentIndex] = reader.result;
                 localStorage.setItem('properties', JSON.stringify(storedProperties));
                 alert('تم تحديث المرفق بنجاح.');
-                location.reload();
+                // تحديث العقار المعروض في القائمة بعد التعديل
+                propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+                storedProperties.forEach(addPropertyToList);
             };
             reader.readAsDataURL(newAttachment);
         }
 
+        // حذف المرفق
         function deleteAttachment(propertyName, attachmentIndex) {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             const property = storedProperties.find(p => p.name === propertyName);
@@ -259,9 +292,12 @@
             property.images.splice(attachmentIndex, 1);
             localStorage.setItem('properties', JSON.stringify(storedProperties));
             alert('تم حذف المرفق بنجاح.');
-            location.reload();
+            // تحديث العقار المعروض في القائمة بعد الحذف
+            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+            storedProperties.forEach(addPropertyToList);
         }
 
+        // تصفية العقارات
         function filterPropertiesAdmin() {
             const minPrice = parseFloat(document.getElementById('minPriceAdmin').value) || 0;
             const maxPrice = parseFloat(document.getElementById('maxPriceAdmin').value) || Infinity;
@@ -278,6 +314,7 @@
             filteredProperties.forEach(addPropertyToList);
         }
 
+        // عرض المرفقات في نافذة جديدة
         function viewAttachments(propertyName) {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             const property = storedProperties.find(p => p.name === propertyName);
