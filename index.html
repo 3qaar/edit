@@ -88,21 +88,42 @@
             border-radius: 4px;
         }
 
-        .edit-attachment-section {
-            margin-top: 20px;
-        }
-
-        .edit-attachment-section img {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .edit-attachment-section input[type="file"] {
-            width: 50%;
-        }
-
         .add-attachment-section {
             margin-top: 20px;
+        }
+
+        /* نافذة منبثقة */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 4px;
+            width: 60%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -142,15 +163,63 @@
             <h2>العقارات المتوفرة</h2>
         </div>
     </div>
-    
+
+    <!-- نافذة منبثقة لإضافة المرفقات -->
+    <div id="attachmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>إضافة مرفق جديد</h3>
+            <input type="file" id="newAttachment" accept="image/*">
+            <button onclick="saveNewAttachment()">إضافة المرفق</button>
+        </div>
+    </div>
+
     <script>
         const propertyList = document.getElementById('propertyList');
-        
-        // تحميل العقارات عند التحميل الأول
-        document.addEventListener('DOMContentLoaded', () => {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            storedProperties.forEach(property => addPropertyToList(property));
-        });
+        let currentPropertyName = '';
+
+        // فتح النافذة المنبثقة لإضافة المرفقات
+        function addAttachment(propertyName) {
+            currentPropertyName = propertyName;
+            const modal = document.getElementById('attachmentModal');
+            modal.style.display = "block";
+        }
+
+        // إغلاق النافذة المنبثقة
+        function closeModal() {
+            const modal = document.getElementById('attachmentModal');
+            modal.style.display = "none";
+        }
+
+        // حفظ المرفق الجديد
+        function saveNewAttachment() {
+            const newAttachment = document.getElementById('newAttachment').files[0];
+            if (!newAttachment) {
+                alert('يرجى اختيار صورة جديدة.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+                const property = storedProperties.find(p => p.name === currentPropertyName);
+
+                if (!property) {
+                    alert('العقار غير موجود.');
+                    return;
+                }
+
+                property.images.push(reader.result);
+                localStorage.setItem('properties', JSON.stringify(storedProperties));
+                alert('تم إضافة المرفق بنجاح.');
+
+                // تحديث العقار المعروض في القائمة بعد الإضافة
+                propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+                storedProperties.forEach(addPropertyToList);
+                closeModal();
+            };
+            reader.readAsDataURL(newAttachment);
+        }
 
         // إضافة عقار جديد
         function addProperty() {
@@ -205,7 +274,6 @@
                     ${property.images.map((img, index) => `
                         <div class="attachment-item">
                             <img src="${img}" alt="مرفق ${index + 1}">
-                            <button onclick="deleteAttachment('${property.name}', ${index})">حذف</button>
                         </div>
                     `).join('')}
                 </div>
@@ -226,75 +294,6 @@
                 ${attachmentsHtml}
             `;
             propertyList.appendChild(propertyItem);
-        }
-
-        // إضافة مرفق جديد إلى العقار
-        function addAttachment(propertyName) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const property = storedProperties.find(p => p.name === propertyName);
-
-            if (!property) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
-            const addAttachmentSection = document.createElement('div');
-            addAttachmentSection.className = 'add-attachment-section';
-            addAttachmentSection.innerHTML = `
-                <h3>إضافة مرفق للعقار: ${propertyName}</h3>
-                <input type="file" id="newAttachment" accept="image/*">
-                <button onclick="saveNewAttachment('${propertyName}')">إضافة المرفق</button>
-            `;
-            const propertyItem = document.querySelector(`.property-item h3:contains(${propertyName})`).parentNode;
-            propertyItem.appendChild(addAttachmentSection);
-        }
-
-        // حفظ المرفق الجديد
-        function saveNewAttachment(propertyName) {
-            const newAttachment = document.getElementById('newAttachment').files[0];
-            if (!newAttachment) {
-                alert('يرجى اختيار صورة جديدة.');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = () => {
-                const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-                const property = storedProperties.find(p => p.name === propertyName);
-
-                if (!property) {
-                    alert('العقار غير موجود.');
-                    return;
-                }
-
-                property.images.push(reader.result);
-                localStorage.setItem('properties', JSON.stringify(storedProperties));
-                alert('تم إضافة المرفق بنجاح.');
-
-                // تحديث العقار المعروض في القائمة بعد الإضافة
-                propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
-                storedProperties.forEach(addPropertyToList);
-            };
-            reader.readAsDataURL(newAttachment);
-        }
-
-        // حذف مرفق من العقار
-        function deleteAttachment(propertyName, index) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const property = storedProperties.find(p => p.name === propertyName);
-
-            if (!property) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
-            // حذف المرفق المحدد
-            property.images.splice(index, 1);
-            localStorage.setItem('properties', JSON.stringify(storedProperties));
-
-            // تحديث العقار المعروض في القائمة بعد الحذف
-            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
-            storedProperties.forEach(addPropertyToList);
         }
 
         // تصفية العقارات
