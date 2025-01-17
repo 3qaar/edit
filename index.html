@@ -79,6 +79,7 @@
             display: inline-block;
             margin-right: 10px;
             margin-bottom: 10px;
+            position: relative;
         }
 
         .attachment-item img {
@@ -86,6 +87,22 @@
             height: 100px;
             object-fit: cover;
             border-radius: 4px;
+        }
+
+        .attachment-item button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .attachment-item button:hover {
+            background-color: darkred;
         }
 
         .add-attachment-section {
@@ -221,6 +238,24 @@
             reader.readAsDataURL(newAttachment);
         }
 
+        // حذف المرفق
+        function deleteAttachment(propertyName, index) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            property.images.splice(index, 1); // إزالة المرفق بناءً على الفهرس
+            localStorage.setItem('properties', JSON.stringify(storedProperties));
+
+            // تحديث العقار المعروض في القائمة بعد الحذف
+            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+            storedProperties.forEach(addPropertyToList);
+        }
+
         // إضافة عقار جديد
         function addProperty() {
             const name = document.getElementById('propertyName').value;
@@ -274,6 +309,7 @@
                     ${property.images.map((img, index) => `
                         <div class="attachment-item">
                             <img src="${img}" alt="مرفق ${index + 1}">
+                            <button onclick="deleteAttachment('${property.name}', ${index})">حذف</button>
                         </div>
                     `).join('')}
                 </div>
