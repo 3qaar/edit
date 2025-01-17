@@ -100,6 +100,10 @@
         .edit-attachment-section input[type="file"] {
             width: 50%;
         }
+
+        .add-attachment-section {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -210,6 +214,7 @@
 
             const buttonsHtml = `
                 <button onclick="viewAttachments('${property.name}')">عرض المرفقات</button>
+                <button onclick="addAttachment('${property.name}')">إضافة مرفق</button>
             `;
 
             propertyItem.innerHTML = `
@@ -225,8 +230,8 @@
             propertyList.appendChild(propertyItem);
         }
 
-        // تعديل المرفق
-        function editAttachment(propertyName, attachmentIndex) {
+        // إضافة مرفق جديد إلى العقار
+        function addAttachment(propertyName) {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             const property = storedProperties.find(p => p.name === propertyName);
 
@@ -235,32 +240,19 @@
                 return;
             }
 
-            const attachment = property.images[attachmentIndex];
-            const editSection = document.createElement('div');
-            editSection.className = 'edit-attachment-section';
-
-            editSection.innerHTML = `
-                <h3>تعديل المرفق</h3>
-                <img src="${attachment}" alt="المرفق" style="max-width: 100%; border-radius: 4px;">
+            const addAttachmentSection = document.createElement('div');
+            addAttachmentSection.className = 'add-attachment-section';
+            addAttachmentSection.innerHTML = `
+                <h3>إضافة مرفق للعقار: ${propertyName}</h3>
                 <input type="file" id="newAttachment" accept="image/*">
-                <button onclick="updateAttachment('${propertyName}', ${attachmentIndex})">تحديث المرفق</button>
-                <button onclick="deleteAttachment('${propertyName}', ${attachmentIndex})">حذف المرفق</button>
+                <button onclick="saveNewAttachment('${propertyName}')">إضافة المرفق</button>
             `;
-
             const propertyItem = document.querySelector(`.property-item h3:contains(${propertyName})`).parentNode;
-            propertyItem.appendChild(editSection);
+            propertyItem.appendChild(addAttachmentSection);
         }
 
-        // تحديث المرفق
-        function updateAttachment(propertyName, attachmentIndex) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const property = storedProperties.find(p => p.name === propertyName);
-
-            if (!property) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
+        // حفظ المرفق الجديد
+        function saveNewAttachment(propertyName) {
             const newAttachment = document.getElementById('newAttachment').files[0];
             if (!newAttachment) {
                 alert('يرجى اختيار صورة جديدة.');
@@ -269,32 +261,23 @@
 
             const reader = new FileReader();
             reader.onload = () => {
-                property.images[attachmentIndex] = reader.result;
+                const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+                const property = storedProperties.find(p => p.name === propertyName);
+
+                if (!property) {
+                    alert('العقار غير موجود.');
+                    return;
+                }
+
+                property.images.push(reader.result);
                 localStorage.setItem('properties', JSON.stringify(storedProperties));
-                alert('تم تحديث المرفق بنجاح.');
-                // تحديث العقار المعروض في القائمة بعد التعديل
+                alert('تم إضافة المرفق بنجاح.');
+
+                // تحديث العقار المعروض في القائمة بعد الإضافة
                 propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
                 storedProperties.forEach(addPropertyToList);
             };
             reader.readAsDataURL(newAttachment);
-        }
-
-        // حذف المرفق
-        function deleteAttachment(propertyName, attachmentIndex) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const property = storedProperties.find(p => p.name === propertyName);
-
-            if (!property) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
-            property.images.splice(attachmentIndex, 1);
-            localStorage.setItem('properties', JSON.stringify(storedProperties));
-            alert('تم حذف المرفق بنجاح.');
-            // تحديث العقار المعروض في القائمة بعد الحذف
-            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
-            storedProperties.forEach(addPropertyToList);
         }
 
         // تصفية العقارات
@@ -334,7 +317,7 @@
                 </head>
                 <body>
                     <h1>مرفقات ${property.name}</h1>
-                    ${property.images.slice(1).map(img => `<img src="${img}" alt="${property.name}">`).join('')}
+                    ${property.images.map(img => `<img src="${img}" alt="${property.name}">`).join('')}
                 </body>
                 </html>
             `;
