@@ -60,6 +60,23 @@
             max-width: 100%;
             border-radius: 4px;
         }
+        .property-item .attachments {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .property-item .attachments img {
+            max-width: 150px;
+            margin: 10px;
+            border-radius: 4px;
+        }
+        .property-item .attachments button {
+            margin-top: 10px;
+        }
+        .edit-attachment-section {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -152,10 +169,19 @@
 
             const firstImageHtml = property.images.length > 0 ? `<img src="${property.images[0]}" alt="${property.name}" style="display: block; max-width: 100%; border-radius: 4px;">` : '';
 
+            const attachmentsHtml = `
+                <div class="attachments">
+                    ${property.images.map((img, index) => `
+                        <div class="attachment-item">
+                            <img src="${img}" alt="مرفق ${index + 1}">
+                            <button onclick="editAttachment('${property.name}', ${index})">تعديل</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
             const buttonsHtml = `
                 <button onclick="viewAttachments('${property.name}')">عرض المرفقات</button>
-                <button onclick="editProperty('${property.name}')">تعديل</button>
-                <button onclick="deleteProperty('${property.name}')">حذف</button>
             `;
 
             propertyItem.innerHTML = `
@@ -166,8 +192,74 @@
                 <p>${property.description}</p>
                 ${firstImageHtml}
                 ${buttonsHtml}
+                ${attachmentsHtml}
             `;
             propertyList.appendChild(propertyItem);
+        }
+
+        function editAttachment(propertyName, attachmentIndex) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            const attachment = property.images[attachmentIndex];
+            const editSection = document.createElement('div');
+            editSection.className = 'edit-attachment-section';
+
+            editSection.innerHTML = `
+                <h3>تعديل المرفق</h3>
+                <img src="${attachment}" alt="المرفق" style="max-width: 100%; border-radius: 4px;">
+                <input type="file" id="newAttachment" accept="image/*">
+                <button onclick="updateAttachment('${propertyName}', ${attachmentIndex})">تحديث المرفق</button>
+                <button onclick="deleteAttachment('${propertyName}', ${attachmentIndex})">حذف المرفق</button>
+            `;
+
+            const propertyItem = document.querySelector(`.property-item h3:contains(${propertyName})`).parentNode;
+            propertyItem.appendChild(editSection);
+        }
+
+        function updateAttachment(propertyName, attachmentIndex) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            const newAttachment = document.getElementById('newAttachment').files[0];
+            if (!newAttachment) {
+                alert('يرجى اختيار صورة جديدة.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                property.images[attachmentIndex] = reader.result;
+                localStorage.setItem('properties', JSON.stringify(storedProperties));
+                alert('تم تحديث المرفق بنجاح.');
+                location.reload();
+            };
+            reader.readAsDataURL(newAttachment);
+        }
+
+        function deleteAttachment(propertyName, attachmentIndex) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            property.images.splice(attachmentIndex, 1);
+            localStorage.setItem('properties', JSON.stringify(storedProperties));
+            alert('تم حذف المرفق بنجاح.');
+            location.reload();
         }
 
         function filterPropertiesAdmin() {
