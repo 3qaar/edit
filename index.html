@@ -27,6 +27,15 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        .filter-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .filter-section select, .filter-section input {
+            padding: 0.5rem;
+            width: 45%;
+        }
         .property-upload input, .property-upload textarea {
             margin: 1rem 0;
             padding: 0.5rem;
@@ -63,9 +72,26 @@
             <input type="text" id="propertyName" placeholder="اسم العقار" required>
             <input type="text" id="propertyLocation" placeholder="الموقع" required>
             <input type="number" id="propertyPrice" placeholder="السعر (بالريال السعودي)" required>
+            <select id="propertyType">
+                <option value="شقة">شقة</option>
+                <option value="فيلا">فيلا</option>
+                <option value="أرض">أرض</option>
+            </select>
             <textarea id="propertyDescription" placeholder="وصف العقار" rows="4"></textarea>
             <input type="file" id="propertyImages" accept="image/*" multiple>
             <button onclick="addProperty()">إضافة العقار</button>
+        </div>
+
+        <div class="filter-section">
+            <input type="number" id="minPriceAdmin" placeholder="السعر الأدنى" />
+            <input type="number" id="maxPriceAdmin" placeholder="السعر الأعلى" />
+            <select id="propertyTypeAdmin">
+                <option value="">النوع</option>
+                <option value="شقة">شقة</option>
+                <option value="فيلا">فيلا</option>
+                <option value="أرض">أرض</option>
+            </select>
+            <button onclick="filterPropertiesAdmin()">تصفية</button>
         </div>
 
         <div class="property-list" id="propertyList">
@@ -75,7 +101,6 @@
     
     <script>
         const propertyList = document.getElementById('propertyList');
-        const adminSection = document.getElementById('adminSection');
         document.addEventListener('DOMContentLoaded', () => {
             const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
             storedProperties.forEach(property => addPropertyToList(property));
@@ -86,10 +111,11 @@
             const location = document.getElementById('propertyLocation').value;
             const price = document.getElementById('propertyPrice').value;
             const description = document.getElementById('propertyDescription').value;
+            const type = document.getElementById('propertyType').value;
             const imageInput = document.getElementById('propertyImages');
             const images = Array.from(imageInput.files);
 
-            if (!name || !location || !price || !description || images.length === 0) {
+            if (!name || !location || !price || !description || images.length === 0 || !type) {
                 alert('يرجى تعبئة جميع الحقول واختيار صور.');
                 return;
             }
@@ -104,7 +130,7 @@
             });
 
             Promise.all(imagePromises).then(imageDataArray => {
-                const property = { name, location, price, description, images: imageDataArray };
+                const property = { name, location, price, description, type, images: imageDataArray };
 
                 const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
                 storedProperties.push(property);
@@ -136,11 +162,28 @@
                 <h3>${property.name}</h3>
                 <p><strong>الموقع:</strong> ${property.location}</p>
                 <p><strong>السعر:</strong> ${property.price} ريال</p>
+                <p><strong>النوع:</strong> ${property.type}</p>
                 <p>${property.description}</p>
                 ${firstImageHtml}
                 ${buttonsHtml}
             `;
             propertyList.appendChild(propertyItem);
+        }
+
+        function filterPropertiesAdmin() {
+            const minPrice = parseFloat(document.getElementById('minPriceAdmin').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('maxPriceAdmin').value) || Infinity;
+            const type = document.getElementById('propertyTypeAdmin').value;
+
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const filteredProperties = storedProperties.filter(property => {
+                const matchesPrice = property.price >= minPrice && property.price <= maxPrice;
+                const matchesType = type ? property.type === type : true;
+                return matchesPrice && matchesType;
+            });
+
+            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+            filteredProperties.forEach(addPropertyToList);
         }
 
         function viewAttachments(propertyName) {
@@ -168,44 +211,6 @@
             `;
             newWindow.document.write(html);
             newWindow.document.close();
-        }
-
-        function editProperty(propertyName) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const propertyIndex = storedProperties.findIndex(p => p.name === propertyName);
-            if (propertyIndex === -1) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
-            const property = storedProperties[propertyIndex];
-            const newName = prompt('اسم العقار:', property.name);
-            const newLocation = prompt('الموقع:', property.location);
-            const newPrice = prompt('السعر (بالريال):', property.price);
-            const newDescription = prompt('وصف العقار:', property.description);
-
-            if (newName && newLocation && newPrice && newDescription) {
-                property.name = newName;
-                property.location = newLocation;
-                property.price = newPrice;
-                property.description = newDescription;
-
-                storedProperties[propertyIndex] = property;
-                localStorage.setItem('properties', JSON.stringify(storedProperties));
-
-                propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
-                storedProperties.forEach(addPropertyToList);
-            }
-        }
-
-        function deleteProperty(propertyName) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const filteredProperties = storedProperties.filter(p => p.name !== propertyName);
-
-            localStorage.setItem('properties', JSON.stringify(filteredProperties));
-
-            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
-            filteredProperties.forEach(addPropertyToList);
         }
     </script>
 </body>
