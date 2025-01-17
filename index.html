@@ -205,7 +205,6 @@
                     ${property.images.map((img, index) => `
                         <div class="attachment-item">
                             <img src="${img}" alt="مرفق ${index + 1}">
-                            <button onclick="editAttachment('${property.name}', ${index})">تعديل</button>
                             <button onclick="deleteAttachment('${property.name}', ${index})">حذف</button>
                         </div>
                     `).join('')}
@@ -213,7 +212,6 @@
             `;
 
             const buttonsHtml = `
-                <button onclick="viewAttachments('${property.name}')">عرض المرفقات</button>
                 <button onclick="addAttachment('${property.name}')">إضافة مرفق</button>
             `;
 
@@ -280,6 +278,25 @@
             reader.readAsDataURL(newAttachment);
         }
 
+        // حذف مرفق من العقار
+        function deleteAttachment(propertyName, index) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            // حذف المرفق المحدد
+            property.images.splice(index, 1);
+            localStorage.setItem('properties', JSON.stringify(storedProperties));
+
+            // تحديث العقار المعروض في القائمة بعد الحذف
+            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+            storedProperties.forEach(addPropertyToList);
+        }
+
         // تصفية العقارات
         function filterPropertiesAdmin() {
             const minPrice = parseFloat(document.getElementById('minPriceAdmin').value) || 0;
@@ -295,34 +312,6 @@
 
             propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
             filteredProperties.forEach(addPropertyToList);
-        }
-
-        // عرض المرفقات في نافذة جديدة
-        function viewAttachments(propertyName) {
-            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
-            const property = storedProperties.find(p => p.name === propertyName);
-
-            if (!property) {
-                alert('العقار غير موجود.');
-                return;
-            }
-
-            const newWindow = window.open('', '_blank');
-            const html = `
-                <html lang="ar">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>مرفقات ${property.name}</title>
-                </head>
-                <body>
-                    <h1>مرفقات ${property.name}</h1>
-                    ${property.images.map(img => `<img src="${img}" alt="${property.name}">`).join('')}
-                </body>
-                </html>
-            `;
-            newWindow.document.write(html);
-            newWindow.document.close();
         }
     </script>
 </body>
