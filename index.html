@@ -109,7 +109,6 @@
             margin-top: 20px;
         }
 
-        /* نافذة منبثقة */
         .modal {
             display: none;
             position: fixed;
@@ -256,6 +255,42 @@
             storedProperties.forEach(addPropertyToList);
         }
 
+        // حذف العقار بالكامل
+        function deleteProperty(propertyName) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const updatedProperties = storedProperties.filter(p => p.name !== propertyName);
+            localStorage.setItem('properties', JSON.stringify(updatedProperties));
+
+            // تحديث العقارات المعروضة بعد الحذف
+            propertyList.innerHTML = '<h2>العقارات المتوفرة</h2>';
+            updatedProperties.forEach(addPropertyToList);
+            alert('تم حذف العقار بنجاح.');
+        }
+
+        // تعديل العقار
+        function editProperty(propertyName) {
+            const storedProperties = JSON.parse(localStorage.getItem('properties')) || [];
+            const property = storedProperties.find(p => p.name === propertyName);
+
+            if (!property) {
+                alert('العقار غير موجود.');
+                return;
+            }
+
+            document.getElementById('propertyName').value = property.name;
+            document.getElementById('propertyLocation').value = property.location;
+            document.getElementById('propertyPrice').value = property.price;
+            document.getElementById('propertyDescription').value = property.description;
+            document.getElementById('propertyType').value = property.type;
+
+            // حذف العقار القديم بعد التعديل
+            deleteProperty(propertyName);
+
+            // إضافة العقار المعدل بعد تعبئة الحقول
+            const updatedProperty = { ...property, name: property.name };
+            addProperty();
+        }
+
         // إضافة عقار جديد
         function addProperty() {
             const name = document.getElementById('propertyName').value;
@@ -317,6 +352,8 @@
 
             const buttonsHtml = `
                 <button onclick="addAttachment('${property.name}')">إضافة مرفق</button>
+                <button onclick="editProperty('${property.name}')">تعديل</button>
+                <button onclick="deleteProperty('${property.name}')">حذف</button>
             `;
 
             propertyItem.innerHTML = `
